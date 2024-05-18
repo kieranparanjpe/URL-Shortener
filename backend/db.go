@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	_ "github.com/lib/pq"
@@ -56,12 +57,17 @@ func (db *storage) createTables() error {
 }
 
 func (db *storage) dropAllUsers() error {
-	_, err := db.database.Query(`DROP TABLE IF EXISTS "user" CASCADE`)
+	_, err := db.database.Query(`DROP TABLE IF EXISTS "user" CASCADE;`)
+	return err
+}
+
+func (db *storage) dropUserByEmail(email string) error {
+	_, err := db.database.Query(`DELETE FROM "user" WHERE email=$1;`, email)
 	return err
 }
 
 func (db *storage) dropAllLinks() error {
-	_, err := db.database.Query(`DELETE TABLE IF EXISTS "link" CASCADE`)
+	_, err := db.database.Query(`DELETE TABLE IF EXISTS "link" CASCADE;`)
 	return err
 }
 
@@ -91,4 +97,21 @@ func (db *storage) getAllUsers() ([](*user), error) {
 	}
 
 	return users, nil
+}
+
+func (db *storage) getUserByEmail(email string) (*user, error) {
+	rows, err := db.database.Query(`SELECT * FROM "user" WHERE email=$1`, email)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		user := new(user)
+		if err = rows.Scan(&user.Id, &user.Email, &user.HashPassword); err != nil {
+			return nil, err
+		}
+		return user, nil
+	}
+
+	return nil, fmt.Errorf("could not find account with email %v", email)
 }

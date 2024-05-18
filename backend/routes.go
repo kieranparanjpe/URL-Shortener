@@ -12,6 +12,7 @@ import (
 func startServer(db *storage) {
 	router := mux.NewRouter()
 	router.HandleFunc("/accounts", createHandlerFunc(handleAccount, db))
+	router.HandleFunc("/accounts/{email}", createHandlerFunc(handleAccountByEmail, db))
 
 	log.Fatal(http.ListenAndServe(db.port, router))
 }
@@ -24,6 +25,17 @@ func handleAccount(writer http.ResponseWriter, request *http.Request, db *storag
 		return handleGetAllAccounts(writer, request, db)
 	case "DELETE":
 		return handleDropAllAccounts(writer, request, db)
+	}
+
+	return fmt.Errorf("invalid method")
+}
+
+func handleAccountByEmail(writer http.ResponseWriter, request *http.Request, db *storage) error {
+	switch request.Method {
+	case "GET":
+		return handleGetAccountByEmail(writer, request, db)
+	case "DELETE":
+		return handleDropAccountByEmail(writer, request, db)
 	}
 
 	return fmt.Errorf("invalid method")
@@ -50,6 +62,20 @@ func handleGetAllAccounts(writer http.ResponseWriter, request *http.Request, db 
 	return WriteJSON(writer, http.StatusOK, users)
 }
 
+func handleGetAccountByEmail(writer http.ResponseWriter, request *http.Request, db *storage) error {
+	email, err := extractVariable(request, "email")
+	if err != nil {
+		return err
+	}
+
+	u, err := db.getUserByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	return WriteJSON(writer, http.StatusOK, u)
+}
+
 func handleDropAllAccounts(writer http.ResponseWriter, request *http.Request, db *storage) error {
 	err := db.dropAllUsers()
 	if err != nil {
@@ -57,6 +83,28 @@ func handleDropAllAccounts(writer http.ResponseWriter, request *http.Request, db
 	}
 
 	return WriteJSON(writer, http.StatusOK, jsonMessage{Message: "successfully dropped all accounts from database"})
+}
+
+func handleDropAccountByEmail(writer http.ResponseWriter, request *http.Request, db *storage) error {
+	email, err := extractVariable(request, "email")
+	if err != nil {
+		return err
+	}
+
+	err = db.dropUserByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	return WriteJSON(writer, http.StatusOK, jsonMessage{Message: "successfully dropped account from database"})
+}
+
+func extractVariable(request *http.Request, name string) (string, error) {
+	email, ok := mux.Vars(request)[name]
+	if !ok {
+		return "", fmt.Errorf("could not find variable '%v'", name)
+	}
+	return email, nil
 }
 
 func handleDropAllLinks(writer http.ResponseWriter, request *http.Request, db *storage) error {
