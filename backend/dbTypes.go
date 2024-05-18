@@ -5,3 +5,7 @@ type user struct {
 	Email        string `json:"email"`
 	HashPassword string `json:"hash_password"`
 }
+
+func newUser(email, hashPassword string) *user {
+	return &user{Email: email, HashPassword: hashPassword}
+}
