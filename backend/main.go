@@ -1,9 +1,12 @@
 package main
 
 import (
-	"fmt"
+	"os"
 )
 
 func main() {
-	fmt.Print("hello world")
+	database := &storage{port: os.Getenv("DATABASE_URL")}
+	database.connectDb()
+	defer database.database.Close()
+	startServer(database)
 }
