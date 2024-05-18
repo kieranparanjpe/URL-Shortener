@@ -9,3 +9,9 @@ type user struct {
 func newUser(email, hashPassword string) *user {
 	return &user{Email: email, HashPassword: hashPassword}
 }
+
+type link struct {
+	Id          int    `json:"id"`
+	UrlRedirect string `json:"url_redirect"`
+	UserId      int    `json:"user_id"`
+}
