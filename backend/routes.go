@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
-	"github.com/golang-jwt/jwt"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
 )
@@ -15,7 +15,7 @@ import (
 func startServer(db *storage) {
 	router := mux.NewRouter()
 	router.HandleFunc("/accounts", createHandlerFunc(handleAccount, db))
-	router.HandleFunc("/accounts/{email}", createHandlerFunc(handleAccountByEmail, db))
+	router.HandleFunc("/accounts/{email}", validateWithJWT(createHandlerFunc(handleAccountByEmail, db)))
 	router.HandleFunc("/login", createHandlerFunc(handleLogin, db))
 
 	log.Fatal(http.ListenAndServe(db.port, router))
@@ -36,18 +36,22 @@ func handleLogin(writer http.ResponseWriter, request *http.Request, db *storage)
 		return err
 	}
 
-	if ok := comparePassword(userRequest.Password, userInDB.HashPassword); ok {
-		return fmt.Errorf("password incorrect")
+	if comparePassword(userRequest.Password, userInDB.HashPassword) {
+		return fmt.Errorf("password %v incorrect", userRequest.Password)
 	}
 
 	//password is correct and we found the user in the db -> we can now give jwt key
-	claims := &jwt.RegisteredClaims{ ID: userInDB.Id, ExpiresAt: time.Now().Add(time.Hour * 24)}
+	claims := &jwt.RegisteredClaims{ID: strconv.Itoa(userInDB.Id), ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24))}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(configuration.JWT_SECRET)
+	tokenString, err := token.SignedString([]byte(configuration.JWT_SECRET))
 
-	http.SetCookie(writer, &http.Cookie{Name: "jwt-token", Value: token.String)})
-	writer.Write()
+	if err != nil {
+		return err
+	}
+
+	http.SetCookie(writer, &http.Cookie{Name: "jwt-token", Value: string(tokenString)})
+	return WriteJSON(writer, http.StatusOK, "successfully logged in user and returned jwt as cookie")
 }
 
 func handleAccount(writer http.ResponseWriter, request *http.Request, db *storage) error {
@@ -87,6 +91,18 @@ func handleCreateAccount(writer http.ResponseWriter, request *http.Request, db *
 	if err := db.addUser(userObj); err != nil {
 		return err
 	}
+
+	//sign in the user now:
+	claims := &jwt.RegisteredClaims{ID: strconv.Itoa(userObj.Id), ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24))}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(configuration.JWT_SECRET))
+
+	if err != nil {
+		return err
+	}
+
+	http.SetCookie(writer, &http.Cookie{Name: "jwt-token", Value: string(tokenString)})
 
 	return WriteJSON(writer, http.StatusOK, userObj)
 }
@@ -151,6 +167,51 @@ func createHandlerFunc(handler func(http.ResponseWriter, *http.Request, *storage
 		if err := handler(writer, request, db); err != nil {
 			WriteJSON(writer, http.StatusBadRequest, ApiError{Error: err.Error()})
 		}
+	}
+}
+
+// validateWithJWT requires the request body to contain an "id" field for the user id we are trying to validate
+func validateWithJWT(handler http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		fmt.Println("Validating with JWT")
+
+		var tokenString string = ""
+		for _, cookie := range request.Cookies() {
+			if cookie.Name == "jwt-token" {
+				tokenString = cookie.Value
+			}
+		}
+		if tokenString == "" {
+			WriteJSON(writer, http.StatusBadRequest, "cookie jwt-token does not exist")
+			return
+		}
+
+		claims := &jwt.RegisteredClaims{}
+
+		token, err := jwt.ParseWithClaims(tokenString, claims,
+			func(t *jwt.Token) (interface{}, error) {
+				return []byte(configuration.JWT_SECRET), nil
+			})
+
+		if err != nil || !token.Valid {
+			WriteJSON(writer, http.StatusForbidden, "access denied 1")
+			return
+		}
+
+		idStruct := new(idStruct)
+		if err := json.NewDecoder(request.Body).Decode(idStruct); err != nil {
+			WriteJSON(writer, http.StatusForbidden, err)
+			return
+		}
+
+		if claimID, err := strconv.Atoi(claims.ID); err != nil || idStruct.Id != claimID {
+			WriteJSON(writer, http.StatusForbidden, "access denied 2")
+			return
+		}
+
+		fmt.Printf("Authenticated User with ID %v\n", idStruct.Id)
+
+		handler(writer, request)
 	}
 }
 

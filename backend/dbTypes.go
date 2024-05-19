@@ -4,6 +4,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type idStruct struct {
+	Id int `json:"id"`
+}
+
 type userRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -16,8 +20,7 @@ type user struct {
 }
 
 func comparePassword(plain, hashed string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(plain))
-	return err == nil
+	return bcrypt.CompareHashAndPassword([]byte(hashed), []byte(plain)) == nil
 }
 
 func newUser(email, password string) (*user, error) {
