@@ -34,7 +34,7 @@ func (db *storage) createTables() error {
 	(
 		id SERIAL PRIMARY KEY,
 		email VARCHAR(100) UNIQUE,
-		password VARCHAR(50)
+		password VARCHAR(500)
 	);`)
 
 	if err != nil {
@@ -72,13 +72,22 @@ func (db *storage) dropAllLinks() error {
 }
 
 func (db *storage) addUser(u *user) error {
-	_, err := db.database.Query(`
+	rows, err := db.database.Query(`
 	INSERT INTO "user"
 	(email, password) VALUES
-	($1, $2)
+	($1, $2) 
+	RETURNING id
 	`, u.Email, u.HashPassword)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	if rows.Next() {
+		rows.Scan(&(u.Id))
+	}
+
+	return nil
 }
 
 func (db *storage) getAllUsers() ([](*user), error) {
