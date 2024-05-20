@@ -61,8 +61,8 @@ func (db *storage) dropAllUsers() error {
 	return err
 }
 
-func (db *storage) dropUserByEmail(email string) error {
-	_, err := db.database.Query(`DELETE FROM "user" WHERE email=$1;`, email)
+func (db *storage) dropUserById(id int) error {
+	_, err := db.database.Query(`DELETE FROM "user" WHERE id=$1;`, id)
 	return err
 }
 
@@ -106,6 +106,23 @@ func (db *storage) getAllUsers() ([](*user), error) {
 	}
 
 	return users, nil
+}
+
+func (db *storage) getUserById(id int) (*user, error) {
+	rows, err := db.database.Query(`SELECT * FROM "user" WHERE id=$1`, id)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		user := new(user)
+		if err = rows.Scan(&user.Id, &user.Email, &user.HashPassword); err != nil {
+			return nil, err
+		}
+		return user, nil
+	}
+
+	return nil, fmt.Errorf("could not find account with id %v", id)
 }
 
 func (db *storage) getUserByEmail(email string) (*user, error) {

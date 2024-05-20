@@ -23,6 +23,9 @@ func comparePassword(plain, hashed string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hashed), []byte(plain)) == nil
 }
 
+//nil == true
+//!nil == false
+
 func newUser(email, password string) (*user, error) {
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
