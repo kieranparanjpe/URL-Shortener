@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -15,6 +16,9 @@ func startServer(db *storage) {
 	router.HandleFunc("/accounts/id", validateWithJWT(createHandlerFunc(handleAccountById, db)))
 	router.HandleFunc("/login", createHandlerFunc(handleLogin, db))
 	router.HandleFunc("/logout", createHandlerFunc(handleLogout, db))
+
+	router.HandleFunc("/links", validateWithJWT(createHandlerFunc(handleLink, db)))
+	router.Handle("/l/{id}", createHandlerFunc(handleFollowLink, db))
 
 	log.Fatal(http.ListenAndServe(db.port, router))
 }
@@ -43,7 +47,7 @@ func handleLogin(writer http.ResponseWriter, request *http.Request, db *storage)
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, userInDB)
+	return writeJSON(writer, http.StatusOK, userInDB.noPassword())
 }
 
 func handleLogout(writer http.ResponseWriter, request *http.Request, db *storage) error {
@@ -103,7 +107,7 @@ func handleCreateAccount(writer http.ResponseWriter, request *http.Request, db *
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, userObj)
+	return writeJSON(writer, http.StatusOK, userObj.noPassword())
 }
 
 func handleGetAllAccounts(writer http.ResponseWriter, request *http.Request, db *storage) error {
@@ -121,12 +125,12 @@ func handleGetAccountById(writer http.ResponseWriter, request *http.Request, db 
 		return err
 	}
 
-	u, err := db.getUserById(idStruct.Id)
+	user, err := db.getUserById(idStruct.Id)
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, u)
+	return writeJSON(writer, http.StatusOK, user.noPassword())
 }
 
 func handleDropAllAccounts(writer http.ResponseWriter, request *http.Request, db *storage) error {
@@ -149,7 +153,7 @@ func handleDropAccountById(writer http.ResponseWriter, request *http.Request, db
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, jsonMessage{Message: "successfully dropped account from database"})
+	return writeJSON(writer, http.StatusOK, jsonMessage{Message: fmt.Sprintf("successfully dropped account id=%v from database", idStruct.Id)})
 }
 
 func handleDropAllLinks(writer http.ResponseWriter, request *http.Request, db *storage) error {
@@ -159,4 +163,70 @@ func handleDropAllLinks(writer http.ResponseWriter, request *http.Request, db *s
 	}
 
 	return writeJSON(writer, http.StatusOK, jsonMessage{Message: "successfully dropped all links from database"})
+}
+
+func handleLink(writer http.ResponseWriter, request *http.Request, db *storage) error {
+	switch request.Method {
+	case "POST":
+		return handleCreateLink(writer, request, db)
+	case "GET":
+		return handleGetLinks(writer, request, db)
+	case "DELETE":
+		return handleDropAllAccounts(writer, request, db)
+	}
+
+	return writeJSON(writer, http.StatusMethodNotAllowed, jsonError{Error: "invalid method provided"})
+}
+
+func handleCreateLink(writer http.ResponseWriter, request *http.Request, db *storage) error {
+	linkRequest := new(linkRequest)
+	if err := parseBody(request, linkRequest, false); err != nil {
+		return err
+	}
+
+	link := newLink(linkRequest.UrlRedirect, linkRequest.UserId)
+	if err := db.addLink(link); err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, link)
+}
+
+func handleGetLinks(writer http.ResponseWriter, request *http.Request, db *storage) error {
+	idStruct := new(idStruct)
+	if err := parseBody(request, idStruct, false); err != nil {
+		return err
+	}
+
+	links, err := db.getLinksByUserId(idStruct.Id)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, links)
+}
+
+func handleFollowLink(writer http.ResponseWriter, request *http.Request, db *storage) error {
+	if request.Method != "GET" {
+		return writeJSON(writer, http.StatusMethodNotAllowed, jsonError{Error: "invalid method provided"})
+	}
+
+	idString, err := extractVariable(request, "id")
+	if err != nil {
+		return err
+	}
+
+	id, err := strconv.Atoi(idString)
+	if err != nil {
+		return err
+	}
+
+	url, err := db.getLinkRedirect(id)
+
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, map[string]string{"redirect_url": url})
 }

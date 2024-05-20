@@ -35,9 +35,13 @@ func newUser(email, password string) (*user, error) {
 	return &user{Email: email, HashPassword: string(hashPassword)}, nil
 }
 
+func (u *user) noPassword() user {
+	return user{Id: u.Id, Email: u.Email}
+}
+
 type linkRequest struct {
 	UrlRedirect string `json:"url_redirect"`
-	UserId      int    `json:"user_id"`
+	UserId      int    `json:"id"`
 }
 
 type link struct {

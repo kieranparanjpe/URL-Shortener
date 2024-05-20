@@ -141,3 +141,61 @@ func (db *storage) getUserByEmail(email string) (*user, error) {
 
 	return nil, fmt.Errorf("could not find account with email %v", email)
 }
+
+func (db *storage) addLink(l *link) error {
+	rows, err := db.database.Query(`
+	INSERT INTO "link"
+	(url_redirect, user_id) VALUES
+	($1, $2) 
+	RETURNING id
+	`, l.UrlRedirect, l.UserId)
+
+	if err != nil {
+		return err
+	}
+
+	if rows.Next() {
+		rows.Scan(&(l.Id))
+	}
+
+	return nil
+}
+
+func (db *storage) getLinksByUserId(id int) ([](*link), error) {
+	rows, err := db.database.Query(`
+	SELECT link.id, url_redirect, user_id 
+	FROM link JOIN "user" on user_id="user".id
+	where user_id=$1
+	`, id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	links := make([](*link), 0)
+
+	for rows.Next() {
+		link := new(link)
+		if err = rows.Scan(&link.Id, &link.UrlRedirect, &link.UserId); err != nil {
+			return nil, err
+		}
+		links = append(links, link)
+	}
+
+	return links, nil
+}
+
+func (db *storage) getLinkRedirect(linkID int) (urlRedirect string, err error) {
+	rows, err := db.database.Query(`SELECT url_redirect FROM "link" WHERE id=$1`, linkID)
+	if err != nil {
+		return "", err
+	}
+
+	for rows.Next() {
+		if err = rows.Scan(&urlRedirect); err != nil {
+			return "", err
+		}
+		return urlRedirect, nil
+	}
+	return "", fmt.Errorf("could not find link with id %v", linkID)
+}
