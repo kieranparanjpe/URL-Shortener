@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -12,7 +12,8 @@ import (
 
 func startServer(db *storage) {
 	router := mux.NewRouter()
-	router.HandleFunc("/accounts", createHandlerFunc(handleAccount, db))
+	router.HandleFunc("/accounts", createHandlerFunc(handleAccount, db)).Methods("POST")
+	router.HandleFunc("/accounts", validateWithAdmin(createHandlerFunc(handleAccount, db))).Methods("GET", "DELETE")
 	router.HandleFunc("/accounts/id", validateWithJWT(createHandlerFunc(handleAccountById, db)))
 	router.HandleFunc("/login", createHandlerFunc(handleLogin, db))
 	router.HandleFunc("/logout", createHandlerFunc(handleLogout, db))
@@ -172,7 +173,7 @@ func handleLink(writer http.ResponseWriter, request *http.Request, db *storage) 
 	case "GET":
 		return handleGetLinks(writer, request, db)
 	case "DELETE":
-		return handleDropAllAccounts(writer, request, db)
+		return handleDropLink(writer, request, db)
 	}
 
 	return writeJSON(writer, http.StatusMethodNotAllowed, jsonError{Error: "invalid method provided"})
@@ -190,6 +191,18 @@ func handleCreateLink(writer http.ResponseWriter, request *http.Request, db *sto
 	}
 
 	return writeJSON(writer, http.StatusOK, link)
+}
+
+func handleDropLink(writer http.ResponseWriter, request *http.Request, db *storage) error {
+	idStruct := new(idStruct)
+	if err := parseBody(request, idStruct, false); err != nil {
+		return err
+	}
+	if err := db.dropLinkByLinkID(idStruct.LinkId, idStruct.Id); err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, jsonMessage{Message: fmt.Sprintf("successfully deleted link id=%v from user id=%v", idStruct.LinkId, idStruct.Id)})
 }
 
 func handleGetLinks(writer http.ResponseWriter, request *http.Request, db *storage) error {
@@ -217,7 +230,7 @@ func handleFollowLink(writer http.ResponseWriter, request *http.Request, db *sto
 		return err
 	}
 
-	id, err := strconv.Atoi(idString)
+	id, err := linkToId(idString)
 	if err != nil {
 		return err
 	}
@@ -228,5 +241,11 @@ func handleFollowLink(writer http.ResponseWriter, request *http.Request, db *sto
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, map[string]string{"redirect_url": url})
+	if !strings.HasPrefix(url, "http://") {
+		url = "http://" + url
+	}
+
+	http.Redirect(writer, request, url, http.StatusPermanentRedirect)
+
+	return nil
 }

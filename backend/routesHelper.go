@@ -50,7 +50,8 @@ func getCookie(request *http.Request, name string) (string, error) {
 // validateWithJWT requires the request body to contain an "id" field for the user id we are trying to validate
 func validateWithJWT(handler http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		fmt.Println("Validating with JWT")
+		fmt.Println("----Running Middleware----")
+		fmt.Println("Attempting to authenticate via jwt")
 
 		tokenString, err := getCookie(request, "jwt-token")
 		if err != nil {
@@ -72,7 +73,7 @@ func validateWithJWT(handler http.HandlerFunc) http.HandlerFunc {
 
 		idStruct := new(idStruct)
 		if err := parseBody(request, idStruct, true); err != nil {
-			writeJSON(writer, http.StatusForbidden, jsonError{Error: err.Error()})
+			writeJSON(writer, http.StatusForbidden, jsonError{Error: "access denied"})
 			return
 		}
 
@@ -82,6 +83,27 @@ func validateWithJWT(handler http.HandlerFunc) http.HandlerFunc {
 		}
 
 		fmt.Printf("Authenticated User with ID %v\n", idStruct.Id)
+		fmt.Println("----Ending Middleware----")
+
+		handler(writer, request)
+	}
+}
+
+func validateWithAdmin(handler http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		fmt.Println("Validating as admin")
+
+		adminStruct := new(adminStruct)
+
+		if err := parseBody(request, adminStruct, true); err != nil {
+			writeJSON(writer, http.StatusForbidden, jsonError{Error: err.Error()})
+			return
+		}
+
+		if adminStruct.AdminPassword != configuration.ADMIN_PASSWORD {
+			writeJSON(writer, http.StatusForbidden, jsonError{Error: "admin password incorrect"})
+			return
+		}
 
 		handler(writer, request)
 	}

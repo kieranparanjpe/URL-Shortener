@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"log"
+	"strconv"
 
 	_ "github.com/lib/pq"
 )
@@ -156,6 +158,7 @@ func (db *storage) addLink(l *link) error {
 
 	if rows.Next() {
 		rows.Scan(&(l.Id))
+		l.EncodedId = idToLink(l.Id)
 	}
 
 	return nil
@@ -179,14 +182,37 @@ func (db *storage) getLinksByUserId(id int) ([](*link), error) {
 		if err = rows.Scan(&link.Id, &link.UrlRedirect, &link.UserId); err != nil {
 			return nil, err
 		}
+		link.EncodedId = idToLink(link.Id)
 		links = append(links, link)
 	}
 
 	return links, nil
 }
 
-func (db *storage) getLinkRedirect(linkID int) (urlRedirect string, err error) {
-	rows, err := db.database.Query(`SELECT url_redirect FROM "link" WHERE id=$1`, linkID)
+func (db *storage) dropLinkByLinkID(linkId, userId int) error {
+	rows, err := db.database.Query(`SELECT COUNT(*) FROM link WHERE id=$1 AND user_id=$2;`, linkId, userId)
+
+	if err != nil {
+		return err
+	}
+
+	count := 0
+	for rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			return err
+		}
+	}
+	if count == 0 {
+		return fmt.Errorf("could not delete link with id=%v", linkId)
+	}
+
+	_, err = db.database.Query(`DELETE FROM "link" WHERE id=$1 AND user_id=$2;`, linkId, userId)
+
+	return err
+}
+
+func (db *storage) getLinkRedirect(linkId int) (urlRedirect string, err error) {
+	rows, err := db.database.Query(`SELECT url_redirect FROM "link" WHERE id=$1`, linkId)
 	if err != nil {
 		return "", err
 	}
@@ -197,5 +223,23 @@ func (db *storage) getLinkRedirect(linkID int) (urlRedirect string, err error) {
 		}
 		return urlRedirect, nil
 	}
-	return "", fmt.Errorf("could not find link with id %v", linkID)
+	return "", fmt.Errorf("could not find link with id %v", linkId)
+}
+
+func idToLink(id int) string {
+	id += urlKey
+	return base64.StdEncoding.EncodeToString([]byte(strconv.Itoa(id)))
+}
+
+func linkToId(url string) (int, error) {
+	decoded, err := base64.StdEncoding.DecodeString(url)
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := strconv.Atoi(string(decoded))
+	if err != nil {
+		return 0, err
+	}
+	return id - urlKey, nil
 }

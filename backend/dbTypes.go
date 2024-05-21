@@ -5,7 +5,12 @@ import (
 )
 
 type idStruct struct {
-	Id int `json:"id"`
+	Id     int `json:"id"`
+	LinkId int `json:"link_id"`
+}
+
+type adminStruct struct {
+	AdminPassword string `json:"admin_password"`
 }
 
 type userRequest struct {
@@ -48,6 +53,7 @@ type link struct {
 	Id          int    `json:"id"`
 	UrlRedirect string `json:"url_redirect"`
 	UserId      int    `json:"user_id"`
+	EncodedId   string `json:"encoded_id"`
 }
 
 func newLink(urlRedirect string, userId int) *link {

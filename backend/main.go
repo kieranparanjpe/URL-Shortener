@@ -9,8 +9,9 @@ import (
 
 var configuration *config = &config{}
 
-func main() {
+const urlKey int = 129568958
 
+func main() {
 	loadEnvFile()
 
 	database := &storage{port: configuration.DATABASE_URL} //make sure to export this export DATABASE_URL=":8080"
@@ -35,9 +36,15 @@ func loadEnvFile() {
 	if !ok {
 		log.Fatal("could not find JWT_SECRET in environment variables")
 	}
+
+	configuration.ADMIN_PASSWORD, ok = os.LookupEnv("ADMIN_PASSWORD")
+	if !ok {
+		log.Fatal("could not find ADMIN_PASSWORD in environment variables")
+	}
 }
 
 type config struct {
-	DATABASE_URL string
-	JWT_SECRET   string
+	DATABASE_URL   string
+	JWT_SECRET     string
+	ADMIN_PASSWORD string
 }
