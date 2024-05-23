@@ -1,7 +1,15 @@
 #run 'docker compose up -d' to start services
-
-
 services:
+  backend:
+    container_name: backend
+    image: backend:1.0.0
+    build:
+      context: ./backend
+      dockerfile: go.dockerfile
+    ports:
+      - '8080:8080'
+    depends_on:
+      - db
   db:
     container_name: db
     image: postgres:16
