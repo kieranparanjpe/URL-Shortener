@@ -16,14 +16,15 @@ type storage struct {
 }
 
 func (db *storage) connectDb() {
-	connStr := "user=postgres dbname=postgres password=secret_postrgresql sslmode=disable"
 	var err error
-	db.database, err = sql.Open("postgres", connStr)
+	db.database, err = sql.Open("postgres", configuration.POSTGRES_URL)
 	if err != nil {
+		fmt.Println("first error")
 		log.Fatal(err)
 		return
 	}
 	if err := db.database.Ping(); err != nil {
+		fmt.Println("ping error")
 		log.Fatal(err)
 	}
 	if err := db.createTables(); err != nil {

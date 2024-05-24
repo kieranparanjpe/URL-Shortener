@@ -50,7 +50,7 @@ func getCookie(request *http.Request, name string) (string, error) {
 // validateWithJWT requires the request body to contain an "id" field for the user id we are trying to validate
 func validateWithJWT(handler http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		fmt.Println("----Running Middleware----")
+		fmt.Println("\n----Running Middleware----")
 		fmt.Println("Attempting to authenticate via jwt")
 
 		tokenString, err := getCookie(request, "jwt-token")
@@ -91,6 +91,7 @@ func validateWithJWT(handler http.HandlerFunc) http.HandlerFunc {
 
 func validateWithAdmin(handler http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
+		fmt.Println("\n----Running Middleware----")
 		fmt.Println("Validating as admin")
 
 		adminStruct := new(adminStruct)
@@ -104,6 +105,8 @@ func validateWithAdmin(handler http.HandlerFunc) http.HandlerFunc {
 			writeJSON(writer, http.StatusForbidden, jsonError{Error: "admin password incorrect"})
 			return
 		}
+		fmt.Println("Validated as admin")
+		fmt.Println("----Ending Middleware----")
 
 		handler(writer, request)
 	}

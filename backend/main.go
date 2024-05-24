@@ -18,12 +18,14 @@ func main() {
 	database.connectDb()
 	defer database.database.Close()
 	startServer(database)
+	//fmt.Println("hello world")
+	//log.Fatalln("fatal hello world")
 }
 
 func loadEnvFile() {
-	err := godotenv.Load(".env")
+	err := godotenv.Load(".env.local")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Error loading .env file")
 	}
 
 	var ok bool
@@ -41,10 +43,16 @@ func loadEnvFile() {
 	if !ok {
 		log.Fatal("could not find ADMIN_PASSWORD in environment variables")
 	}
+
+	configuration.POSTGRES_URL, ok = os.LookupEnv("POSTGRES_URL")
+	if !ok {
+		log.Fatal("could not find POSTGRES_URL in environment variables")
+	}
 }
 
 type config struct {
 	DATABASE_URL   string
 	JWT_SECRET     string
 	ADMIN_PASSWORD string
+	POSTGRES_URL   string
 }

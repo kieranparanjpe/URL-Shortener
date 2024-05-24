@@ -6,8 +6,10 @@ services:
     build:
       context: ./backend
       dockerfile: go.dockerfile
+    env_file:
+      - ./backend/.env.docker
     ports:
-      - '8080:8080'
+      - 8080:8080
     depends_on:
       - db
   db:
@@ -15,7 +17,7 @@ services:
     image: postgres:16
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret_postrgresql
+      POSTGRES_PASSWORD: secret_postgresql
       POSTGRES_DB: postgres
     ports:
       - 5432:5432
