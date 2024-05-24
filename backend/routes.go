@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -14,14 +13,16 @@ func startServer(db *storage) {
 	router := mux.NewRouter()
 	router.HandleFunc("/accounts", createHandlerFunc(handleAccount, db)).Methods("POST")
 	router.HandleFunc("/accounts", validateWithAdmin(createHandlerFunc(handleAccount, db))).Methods("GET", "DELETE")
-	router.HandleFunc("/accounts/id", validateWithJWT(createHandlerFunc(handleAccountById, db)))
+	router.HandleFunc("/accounts/{id}", validateWithJWT(createHandlerFunc(handleAccountById, db)))
 	router.HandleFunc("/login", createHandlerFunc(handleLogin, db))
 	router.HandleFunc("/logout", createHandlerFunc(handleLogout, db))
 
-	router.HandleFunc("/links", validateWithJWT(createHandlerFunc(handleLink, db)))
+	router.HandleFunc("/links/{id}", validateWithJWT(createHandlerFunc(handleLink, db)))
 	router.Handle("/l/{id}", createHandlerFunc(handleFollowLink, db))
 
-	log.Fatal(http.ListenAndServe(db.port, router))
+	enhancedRouter := enableCORS(jsonContentTypeMiddleware(router))
+
+	log.Fatal(http.ListenAndServe(db.port, enhancedRouter))
 }
 
 func handleLogin(writer http.ResponseWriter, request *http.Request, db *storage) error {
@@ -100,7 +101,7 @@ func handleCreateAccount(writer http.ResponseWriter, request *http.Request, db *
 	}
 
 	if err := db.addUser(userObj); err != nil {
-		return err
+		return writeJSON(writer, http.StatusConflict, err)
 	}
 
 	//sign in the user now:
@@ -121,12 +122,12 @@ func handleGetAllAccounts(writer http.ResponseWriter, request *http.Request, db 
 }
 
 func handleGetAccountById(writer http.ResponseWriter, request *http.Request, db *storage) error {
-	idStruct := new(idStruct)
-	if err := parseBody(request, idStruct, false); err != nil {
+	id, err := extractId(request)
+	if err != nil {
 		return err
 	}
 
-	user, err := db.getUserById(idStruct.Id)
+	user, err := db.getUserById(id)
 	if err != nil {
 		return err
 	}
@@ -144,17 +145,17 @@ func handleDropAllAccounts(writer http.ResponseWriter, request *http.Request, db
 }
 
 func handleDropAccountById(writer http.ResponseWriter, request *http.Request, db *storage) error {
-	idStruct := new(idStruct)
-	if err := parseBody(request, idStruct, false); err != nil {
-		return err
-	}
-
-	err := db.dropUserById(idStruct.Id)
+	id, err := extractId(request)
 	if err != nil {
 		return err
 	}
 
-	return writeJSON(writer, http.StatusOK, jsonMessage{Message: fmt.Sprintf("successfully dropped account id=%v from database", idStruct.Id)})
+	err = db.dropUserById(id)
+	if err != nil {
+		return err
+	}
+
+	return writeJSON(writer, http.StatusOK, jsonMessage{Message: fmt.Sprintf("successfully dropped account id=%v from database", id)})
 }
 
 func handleDropAllLinks(writer http.ResponseWriter, request *http.Request, db *storage) error {
@@ -198,6 +199,13 @@ func handleDropLink(writer http.ResponseWriter, request *http.Request, db *stora
 	if err := parseBody(request, idStruct, false); err != nil {
 		return err
 	}
+
+	id, err := extractId(request)
+	if err != nil {
+		return err
+	}
+	idStruct.Id = id
+
 	if err := db.dropLinkByLinkID(idStruct.LinkId, idStruct.Id); err != nil {
 		return err
 	}
@@ -206,12 +214,12 @@ func handleDropLink(writer http.ResponseWriter, request *http.Request, db *stora
 }
 
 func handleGetLinks(writer http.ResponseWriter, request *http.Request, db *storage) error {
-	idStruct := new(idStruct)
-	if err := parseBody(request, idStruct, false); err != nil {
+	id, err := extractId(request)
+	if err != nil {
 		return err
 	}
 
-	links, err := db.getLinksByUserId(idStruct.Id)
+	links, err := db.getLinksByUserId(id)
 
 	if err != nil {
 		return err
@@ -239,10 +247,6 @@ func handleFollowLink(writer http.ResponseWriter, request *http.Request, db *sto
 
 	if err != nil {
 		return err
-	}
-
-	if !strings.HasPrefix(url, "http://") {
-		url = "http://" + url
 	}
 
 	http.Redirect(writer, request, url, http.StatusPermanentRedirect)
