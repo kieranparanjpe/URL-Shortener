@@ -66,7 +66,7 @@ export default function Login({setUserCallback, toggleMethod} : {setUserCallback
                 <br/>
                 <button className=" m-auto self-center btn-primary h-12 w-full text-white text-2xl bg-green-600 rounded-lg" >Login</button>
             </form>
-            <button onClick={toggleMethod} className=" m-auto mt-10 self-center h-8 w-3/5 text-white text-xl bg-blue-600 rounded-lg" >no account? sign up</button>
+            <button onClick={toggleMethod} className=" m-auto mt-10 self-center h-10 w-3/4 text-white text-xl bg-blue-600 rounded-lg" >no account? sign up</button>
 
         </div>
     )

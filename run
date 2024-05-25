@@ -1,0 +1,13 @@
+
+
+if [[ $1 = 'build' ]]; then
+    echo building...
+    docker compose build
+fi
+
+docker compose down
+docker compose up -d
+
+if [[ $1 = 'web' || $2 = 'web' ]]; then
+    cd frontend && npm run dev
+fi

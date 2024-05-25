@@ -5,7 +5,7 @@ import { link, user } from "../util/apiTypes";
 import API from "../util/API";
 import LinkItem from "./LinkItem";
 
-export default function Links({myUser}: {myUser : user}) {
+export default function Links({myUser, nullUser}: {myUser : user, nullUser : ()=>void}) {
 
     let [links, setLinks] : [link[], any] = useState([]);
     let [newURL, setNewURL] : [string, any] = useState('');
@@ -45,15 +45,26 @@ export default function Links({myUser}: {myUser : user}) {
         setLinks([...links]);
     }
 
+    const signoutButton = async () => {
+        let ok : boolean = await API.logout();
+        if (ok)
+            nullUser();
+    }
+
     return (
         <div>
-            <div style={{height: '500px', overflowY: 'scroll'}}>
+            <div className="flex align-middle justify-between ml-2 mr-10 mt-2">
+                <h2 className=" text-left text-2xl font-semibold">Logged in as: {myUser.email}</h2>
+                <button className=" w-40 text-white text-xl bg-red-600 rounded-lg" onClick={signoutButton}>Logout</button>
+            </div>
+
+            <div style={{height: '500px', overflowY: 'scroll'}} className=" bg-gray-50 ml-2 mr-2 mt-4 rounded-md shadow-md">
                 {links.map((_value, _index)=>{
                     return <LinkItem key={_index} myLink={_value} deleteCallback={deleteCallback}/>
                 })}
             </div>
 
-            <form onSubmit={handleSubmit} className=" w-3/4 m-auto text-left mt-8">
+            <form onSubmit={handleSubmit} className=" w-3/4 m-auto text-left mt-2">
                 <label className=" w-full">
                     <span className=" text-2xl">New Long URL</span>
                     <input
@@ -62,10 +73,10 @@ export default function Links({myUser}: {myUser : user}) {
                         onChange={(e) => setNewURL(e.target.value)}
                         value={newURL}
                         placeholder="https://google.com"
-                        className=" border-2 rounded-sm border-black w-full text-xl"
+                        className=" border-2 rounded-sm border-black w-full text-xl mt-2"
                     />
                 </label>
-                <button className=" m-auto self-center btn-primary h-12 w-full text-white text-2xl bg-green-600 rounded-lg" >Add Link</button>
+                <button className=" mt-2 mb-2 m-auto self-center btn-primary h-12 w-full text-white text-2xl bg-green-600 rounded-lg" >Add Link</button>
             </form>
         </div>
     )

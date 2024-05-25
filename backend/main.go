@@ -9,17 +9,16 @@ import (
 
 var configuration *config = &config{}
 
-const urlKey int = 129568958
+const urlKey int = 12951
 
 func main() {
 	loadEnvFile()
 
-	database := &storage{port: configuration.DATABASE_URL} //make sure to export this export DATABASE_URL=":8080"
+	database := &storage{port: configuration.DATABASE_URL}
 	database.connectDb()
 	defer database.database.Close()
 	startServer(database)
-	//fmt.Println("hello world")
-	//log.Fatalln("fatal hello world")
+
 }
 
 func loadEnvFile() {

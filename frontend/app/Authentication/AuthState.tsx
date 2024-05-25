@@ -26,6 +26,10 @@ export default function AuthState() {
       localStorage.setItem("current_user_id", newUser.id.toString());
       setMyUser(newUser);
     }
+
+    const nullUser = () => {
+      setMyUser(null);
+    }
   
     useEffect(()=> {
       if (myUser == null)
@@ -34,7 +38,7 @@ export default function AuthState() {
 
     return (
         <div>
-            {myUser == null ? <Authenticate setUserCallback={updateUser}/> : <Links myUser={myUser}/>}
+            {myUser == null ? <Authenticate setUserCallback={updateUser}/> : <Links myUser={myUser} nullUser={nullUser}/>}
         </div>
     )
 }

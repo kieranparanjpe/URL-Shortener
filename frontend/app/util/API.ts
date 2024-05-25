@@ -101,12 +101,11 @@ export default class API
         return await result.json() as link[];
     }
 
-    static async logout(email : string, password : string) : Promise<boolean> {
-        let body : userRequest = {email: email, password: password}
-
+    static async logout() : Promise<boolean> {
         const result = await fetch(this.API_URL + "/logout", {
             method: "POST", 
             headers: {'Content-Type': 'application/json'},
+            credentials: 'include',
         });
 
         if (!result.ok) {
