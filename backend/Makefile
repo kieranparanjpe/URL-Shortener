@@ -2,4 +2,5 @@ build:
 	@go build -o bin/url-shortener
 
 run: build
-	@./bin/url-shortener; echo ""
+	@export RUN_MODE="make"; ./bin/url-shortener; echo ""
+

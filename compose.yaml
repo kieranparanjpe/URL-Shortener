@@ -6,8 +6,8 @@ services:
     build:
       context: ./backend
       dockerfile: go.dockerfile
-    env_file:
-      - ./backend/.env.docker
+    environment:
+      - RUN_MODE=dockerLocal
     ports:
       - 8080:8080
     depends_on:

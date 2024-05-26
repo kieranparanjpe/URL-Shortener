@@ -1,8 +1,25 @@
-
+if [[ $1 = 'prod' ]]; then
+    echo "running prod"
+    docker compose down
+    cd prod
+    docker compose down
+    docker compose up -d
+    cd ..
+    exit 4
+fi
 
 if [[ $1 = 'build' ]]; then
     echo building...
     docker compose build
+
+    if [[ $2 = 'push' ]]; then
+        echo pushing...
+        docker compose build
+        docker tag backend:1.0.0 kieranparanjpe/url-shortener:1.0.0
+        docker push kieranparanjpe/url-shortener:1.0.0
+
+        exit 3
+    fi
 fi
 
 docker compose down
@@ -10,4 +27,7 @@ docker compose up -d
 
 if [[ $1 = 'web' || $2 = 'web' ]]; then
     cd frontend && npm run dev
+    exit 2
 fi
+
+exit 1

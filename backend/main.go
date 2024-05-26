@@ -22,12 +22,30 @@ func main() {
 }
 
 func loadEnvFile() {
-	err := godotenv.Load(".env.local")
-	if err != nil {
-		log.Println("Error loading .env file")
+
+	RUN_MODE, ok := os.LookupEnv("RUN_MODE")
+
+	if !ok {
+		log.Println("Run mode not specified, defaulting to makefile.")
+		RUN_MODE = "make"
+	}
+	envFile := ""
+	switch RUN_MODE {
+	case "make":
+		envFile = ".env.make"
+	case "dockerLocal":
+		envFile = ".env.dockerLocal"
+	case "dockerProduction":
+		envFile = ".env.dockerProduction"
+	default:
+		log.Printf("RUN_MODE=%v\n", RUN_MODE)
 	}
 
-	var ok bool
+	err := godotenv.Load(envFile)
+	if err != nil {
+		log.Printf("Error loading %v, run mode is %v\n", envFile, RUN_MODE)
+	}
+
 	configuration.DATABASE_URL, ok = os.LookupEnv("DATABASE_URL")
 	if !ok {
 		log.Fatal("could not find DATABASE_URL in environment variables")
