@@ -8,9 +8,7 @@ services:
       dockerfile: go.dockerfile
     environment:
       DATABASE_URL: :8080
-      JWT_SECRET: url-shortener-secret-key
-      ADMIN_PASSWORD: url-shortner-admin-passwor
-      POSTGRES_URL: postgres://postgres:secret_postgresql@https://smolrl.azurewebsites.net:5432/postgres?sslmode=disable"
+      POSTGRES_URL: postgres://postgres:secret_postgresql@db:5432/postgres?sslmode=disable"
     ports:
       - 8080:8080
     depends_on:

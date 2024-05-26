@@ -12,7 +12,7 @@ var configuration *config = &config{}
 const urlKey int = 12951
 
 func main() {
-	log.Println("Stating go application...")
+	log.Println("Starting go application...")
 
 	loadEnvFile()
 
@@ -24,29 +24,17 @@ func main() {
 }
 
 func loadEnvFile() {
-
-	RUN_MODE, ok := os.LookupEnv("RUN_MODE")
-
-	if !ok {
-		log.Println("Run mode not specified, defaulting to makefile.")
-		RUN_MODE = "make"
-	}
-	envFile := ""
-	switch RUN_MODE {
-	case "make":
-		envFile = ".env.make"
-	case "dockerLocal":
-		envFile = ".env.dockerLocal"
-	case "dockerProduction":
-		envFile = ".env.dockerProduction"
-	default:
-		log.Printf("RUN_MODE=%v\n", RUN_MODE)
-	}
-
-	err := godotenv.Load(envFile)
+	err := godotenv.Load(".env")
 	if err != nil {
-		log.Printf("Error loading %v, run mode is %v\n", envFile, RUN_MODE)
+		log.Fatal("Could not find core .env file. Exiting")
 	}
+
+	err = godotenv.Load(".env.make")
+	if err != nil {
+		log.Println("Could not find file .env.make. Assuming production build")
+	}
+
+	var ok bool
 
 	configuration.DATABASE_URL, ok = os.LookupEnv("DATABASE_URL")
 	if !ok {

@@ -19,15 +19,15 @@ func (db *storage) connectDb() {
 	var err error
 	db.database, err = sql.Open("postgres", configuration.POSTGRES_URL)
 	if err != nil {
-		fmt.Println("first error")
+		fmt.Println("could not open sql database")
 		log.Fatal(err)
 		return
 	}
 	if err := db.database.Ping(); err != nil {
-		fmt.Println("ping error")
+		fmt.Println("could not ping sql database")
 		log.Fatal(err)
 	}
-	log.Println("Connected to server")
+	log.Println("Go app connected to server")
 
 	if err := db.createTables(); err != nil {
 		log.Fatal(err)

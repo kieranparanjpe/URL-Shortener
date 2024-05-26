@@ -22,6 +22,7 @@ func startServer(db *storage) {
 
 	enhancedRouter := enableCORS(jsonContentTypeMiddleware(router))
 
+	log.Printf("starting server and listening on port: [%v]", configuration.DATABASE_URL)
 	log.Fatal(http.ListenAndServe(db.port, enhancedRouter))
 }
 
