@@ -12,6 +12,8 @@ var configuration *config = &config{}
 const urlKey int = 12951
 
 func main() {
+	log.Println("Stating go application...")
+
 	loadEnvFile()
 
 	database := &storage{port: configuration.DATABASE_URL}
@@ -65,6 +67,9 @@ func loadEnvFile() {
 	if !ok {
 		log.Fatal("could not find POSTGRES_URL in environment variables")
 	}
+
+	log.Println("All env variables loaded")
+
 }
 
 type config struct {

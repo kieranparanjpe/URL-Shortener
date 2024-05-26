@@ -27,6 +27,8 @@ func (db *storage) connectDb() {
 		fmt.Println("ping error")
 		log.Fatal(err)
 	}
+	log.Println("Connected to server")
+
 	if err := db.createTables(); err != nil {
 		log.Fatal(err)
 	}
