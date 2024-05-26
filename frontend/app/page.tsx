@@ -1,6 +1,9 @@
 import AuthState from "./Authentication/AuthState";
+import API from "./util/API";
 
 export default async function Home() {
+  API.init();
+  
   return (
     <main>
         <div>
