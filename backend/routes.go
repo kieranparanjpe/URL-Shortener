@@ -20,6 +20,8 @@ func startServer(db *storage) {
 	router.HandleFunc("/links/{id}", validateWithJWT(createHandlerFunc(handleLink, db)))
 	router.Handle("/l/{id}", createHandlerFunc(handleFollowLink, db))
 
+	log.Printf("Accepting trafic from: %v\n", configuration.ACCEPT_TRAFIC_FROM)
+
 	enhancedRouter := enableCORS(jsonContentTypeMiddleware(router))
 
 	log.Printf("starting server and listening on port: [%v]", configuration.DATABASE_URL)

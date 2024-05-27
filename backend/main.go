@@ -56,13 +56,19 @@ func loadEnvFile() {
 		log.Fatal("could not find POSTGRES_URL in environment variables")
 	}
 
+	configuration.ACCEPT_TRAFIC_FROM, ok = os.LookupEnv("ACCEPT_TRAFIC_FROM")
+	if !ok {
+		log.Fatal("could not find ACCEPT_TRAFIC_FROM in environment variables")
+	}
+
 	log.Println("All env variables loaded")
 
 }
 
 type config struct {
-	DATABASE_URL   string
-	JWT_SECRET     string
-	ADMIN_PASSWORD string
-	POSTGRES_URL   string
+	DATABASE_URL       string
+	JWT_SECRET         string
+	ADMIN_PASSWORD     string
+	POSTGRES_URL       string
+	ACCEPT_TRAFIC_FROM string
 }

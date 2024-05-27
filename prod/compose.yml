@@ -3,18 +3,17 @@ services:
   backend:
     container_name: backend
     image: kieranparanjpe/url-shortener:1.0.0
-    restart: always
     environment:
-      DATABASE_URL: :80
+      DATABASE_URL: :8080
       POSTGRES_URL: postgres://postgres:secret_postgresql@db:5432/postgres?sslmode=disable
+      ACCEPT_TRAFIC_FROM: https://urlshortener.kieranparanjpe.com/
     ports:
-      - 80:80
+      - 8080:80
     depends_on:
       - db
   db:
     container_name: db
     image: postgres:16
-    restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret_postgresql

@@ -9,6 +9,7 @@ services:
     environment:
       DATABASE_URL: :8080
       POSTGRES_URL: postgres://postgres:secret_postgresql@db:5432/postgres?sslmode=disable
+      ACCEPT_TRAFIC_FROM: http://localhost:3000
     ports:
       - 8080:8080
     depends_on:
