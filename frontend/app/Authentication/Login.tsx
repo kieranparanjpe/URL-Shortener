@@ -25,7 +25,7 @@ export default function Login({setUserCallback, toggleMethod} : {setUserCallback
 
     return (
         <div className={"content-start text-center justify-center bg-white shadow-xl shadow-gray-700"}
-        style={{height: "60vh", width: "25vw", marginLeft: "auto", marginRight: "auto", marginTop:"5vh", borderRadius: "20px"}}>
+        style={{height: "60vh", width: "25vw", minWidth: "300px", marginLeft: "auto", marginRight: "auto", marginTop:"5vh", borderRadius: "20px"}}>
             <div className="flex items-center justify-items-center w-full h-16">
                 <h2 className="text-black text-center font-bold text-4xl" style={{paddingInline: "1vw", flex: "1"}}>Login</h2>
             </div>
